@@ -5,6 +5,7 @@ const NodeCache = require('node-cache');
 const cheerio = require('cheerio');
 
 const cache = new NodeCache({ stdTTL: 300 });
+const staleCache = new NodeCache({ stdTTL: 7200 }); // 2-hour stale fallback
 const NEWS_API_KEY = process.env.NEWS_API_KEY;
 const BASE = 'https://eventregistry.org/api/v1';
 
@@ -655,106 +656,115 @@ function to60Words(text) {
   return snippet + '…';
 }
 
+// ─── Helper: fetch + cache quickbites data ────────────────────────────────────
+async function refreshQuickBites(cacheKey, interests, country) {
+  const countryUri = COUNTRY_URIS[country.toLowerCase()];
+  const dateStart = dateStr(5);
+  const topKeywords = interests.slice(0, 2).map(i => {
+    const kws = (INTEREST_KEYWORDS[i] || i).toLowerCase().split(/\s+/);
+    return kws[0];
+  }).filter(Boolean);
+
+  const [worldCall, countryCall, ...interestCalls] = await Promise.all([
+    apiPost({
+      sourceUri: GLOBAL_SOURCE_URIS,
+      articlesCount: 12,
+      articlesSortBy: 'date',
+      dateStart,
+      articleBodyLen: 400,
+    }),
+    countryUri
+      ? apiPost({
+          sourceLocationUri: countryUri,
+          articlesCount: 12,
+          articlesSortBy: 'date',
+          dateStart,
+          articleBodyLen: 400,
+        })
+      : apiPost({
+          keyword: country,
+          keywordLoc: 'title',
+          articlesCount: 10,
+          articlesSortBy: 'date',
+          startSourceRankPercentile: 0,
+          endSourceRankPercentile: 30,
+          dateStart,
+          articleBodyLen: 400,
+        }),
+    ...topKeywords.map(kw => apiPost({
+      keyword: kw,
+      keywordLoc: 'title',
+      articlesCount: 10,
+      articlesSortBy: 'date',
+      startSourceRankPercentile: 0,
+      endSourceRankPercentile: 30,
+      dateStart,
+      articleBodyLen: 400,
+    })),
+  ]);
+
+  const interestWordSet = new Set(
+    interests
+      .flatMap(i => (INTEREST_KEYWORDS[i] || '').toLowerCase().split(/\s+/))
+      .filter(w => w.length > 3)
+  );
+
+  const interestArticles = interestCalls.flatMap(r => r.articles || []);
+  const raw = mergeDedupe(
+    [interestArticles, worldCall.articles, countryCall.articles || []],
+    80
+  );
+
+  const articles = raw
+    .map((a, idx) => {
+      const base = formatArticle(a, idx);
+      const bite = to60Words(a.body || '');
+      const text = ((a.title || '') + ' ' + (a.body || '')).toLowerCase();
+      const matchCount = [...interestWordSet].filter(kw => text.includes(kw)).length;
+      const interestBoost = Math.min(matchCount * 8, 60);
+      const freshness = Math.max(0, 100 - (Date.now() - new Date(base.publishedAt)) / 3600000 * 3.33);
+      const biteScore = (base.accuracy?.score || 60) * 0.35 + freshness * 0.4 + interestBoost;
+      return { ...base, bite, biteScore };
+    })
+    .sort((a, b) => b.biteScore - a.biteScore)
+    .filter((() => {
+      const sourceCounts = {};
+      return a => {
+        const src = a.sourceId || a.source || 'unknown';
+        sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+        return sourceCounts[src] <= 2;
+      };
+    })())
+    .slice(0, 30)
+    .map(({ biteScore, ...rest }) => rest);
+
+  const result = { articles };
+  cache.set(cacheKey, result, 1800);      // fresh for 30 min
+  staleCache.set(cacheKey, result, 7200); // stale fallback for 2 hrs
+  return result;
+}
+
 // ─── POST /api/news/quickbites  { interests, country } ───────────────────────
 router.post('/quickbites', async (req, res) => {
   const { interests = [], country = 'United States of America', refresh = false } = req.body;
   const cacheKey = `qbites_${country}_${[...interests].sort().join('_')}`;
-  if (refresh) cache.del(cacheKey);
+  if (refresh) { cache.del(cacheKey); staleCache.del(cacheKey); }
+
   const cached = cache.get(cacheKey);
   if (cached) return res.json(cached);
 
+  // Serve stale data instantly while refreshing in background
+  const stale = staleCache.get(cacheKey);
+  if (stale) {
+    res.json(stale);
+    setImmediate(async () => {
+      try { await refreshQuickBites(cacheKey, interests, country); } catch {}
+    });
+    return;
+  }
+
   try {
-    const countryUri = COUNTRY_URIS[country.toLowerCase()];
-    const dateStart = dateStr(5);
-    const interestKeywords = interests.length > 0
-      ? interests.slice(0, 5).map(i => INTEREST_KEYWORDS[i] || i).join(' OR ')
-      : 'world news politics science technology';
-
-    // Pick top 2 single-word interest keywords for API filtering
-    const topKeywords = interests.slice(0, 2).map(i => {
-      const kws = (INTEREST_KEYWORDS[i] || i).toLowerCase().split(/\s+/);
-      return kws[0]; // first keyword is most specific
-    }).filter(Boolean);
-
-    const [worldCall, countryCall, ...interestCalls] = await Promise.all([
-      // World news — pinned to trusted global sources (Reuters, AP, BBC, etc.) so no
-      // regional/local sources sneak in regardless of EventRegistry percentile rankings
-      apiPost({
-        sourceUri: GLOBAL_SOURCE_URIS,
-        articlesCount: 20,
-        articlesSortBy: 'date',
-        dateStart,
-        articleBodyLen: 600,
-      }),
-      // Country-specific news — automatically included based on user's country
-      countryUri
-        ? apiPost({
-            sourceLocationUri: countryUri,
-            articlesCount: 20,
-            articlesSortBy: 'date',
-            dateStart,
-            articleBodyLen: 600,
-          })
-        : apiPost({
-            keyword: country,
-            keywordLoc: 'title',
-            articlesCount: 15,
-            articlesSortBy: 'date',
-            startSourceRankPercentile: 0,
-            endSourceRankPercentile: 30,
-            dateStart,
-            articleBodyLen: 600,
-          }),
-      // Interest-specific calls (one per top interest, single keyword)
-      ...topKeywords.map(kw => apiPost({
-        keyword: kw,
-        keywordLoc: 'title',
-        articlesCount: 15,
-        articlesSortBy: 'date',
-        startSourceRankPercentile: 0,
-        endSourceRankPercentile: 30,
-        dateStart,
-        articleBodyLen: 600,
-      })),
-    ]);
-
-    const interestWordSet = new Set(
-      interests
-        .flatMap(i => (INTEREST_KEYWORDS[i] || '').toLowerCase().split(/\s+/))
-        .filter(w => w.length > 3)
-    );
-
-    const interestArticles = interestCalls.flatMap(r => r.articles || []);
-    const raw = mergeDedupe(
-      [interestArticles, worldCall.articles, countryCall.articles || []],
-      80
-    );
-
-    const articles = raw
-      .map((a, idx) => {
-        const base = formatArticle(a, idx);
-        const bite = to60Words(a.body || '');
-        const text = ((a.title || '') + ' ' + (a.body || '')).toLowerCase();
-        const matchCount = [...interestWordSet].filter(kw => text.includes(kw)).length;
-        const interestBoost = Math.min(matchCount * 8, 60); // cap at 60, stronger boost
-        const freshness = Math.max(0, 100 - (Date.now() - new Date(base.publishedAt)) / 3600000 * 3.33);
-        const biteScore = (base.accuracy?.score || 60) * 0.35 + freshness * 0.4 + interestBoost;
-        return { ...base, bite, biteScore };
-      })
-      .sort((a, b) => b.biteScore - a.biteScore)
-      .filter((() => {
-        const sourceCounts = {};
-        return a => {
-          const src = a.sourceId || a.source || 'unknown';
-          sourceCounts[src] = (sourceCounts[src] || 0) + 1;
-          return sourceCounts[src] <= 2; // max 2 per source
-        };
-      })())
-      .slice(0, 30)
-      .map(({ biteScore, ...rest }) => rest);
-
-    const result = { articles };
-    cache.set(cacheKey, result, 300);
+    const result = await refreshQuickBites(cacheKey, interests, country);
     res.json(result);
   } catch (err) {
     console.error('QUICKBITES error:', err.response?.data || err.message);
