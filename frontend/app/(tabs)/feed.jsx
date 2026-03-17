@@ -56,7 +56,10 @@ export default function FeedScreen() {
   const [interests, setInterests] = useState([]);
   const [country, setCountry] = useState('');
   const [sortBy, setSortBy] = useState('smart');
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all' or an interest id
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [filterArticles, setFilterArticles] = useState([]);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const countryVal = country;
 
   useFocusEffect(
     useCallback(() => { loadData(); }, [])
@@ -77,6 +80,8 @@ export default function FeedScreen() {
       setCountry(c);
       const data = await fetchPersonalizedFeed(parsed, c, isRefresh);
       setArticles(data);
+      setActiveFilter('all');
+      setFilterArticles([]);
     } catch (e) {
       setError('Could not load feed.\nMake sure the backend is running.');
     } finally {
@@ -85,15 +90,26 @@ export default function FeedScreen() {
     }
   }
 
+  async function applyFilter(id) {
+    if (id === 'all') {
+      setActiveFilter('all');
+      setFilterArticles([]);
+      return;
+    }
+    setActiveFilter(id);
+    setFilterLoading(true);
+    try {
+      const data = await fetchPersonalizedFeed([id], countryVal, false);
+      setFilterArticles(data);
+    } catch {
+      setFilterArticles([]);
+    } finally {
+      setFilterLoading(false);
+    }
+  }
+
   const sorted = useMemo(() => {
-    let base = activeFilter === 'all'
-      ? articles
-      : articles.filter(a => {
-          const keywords = INTEREST_KEYWORDS[activeFilter];
-          if (!keywords) return true;
-          const text = `${a.title || ''} ${a.description || ''} ${a.source || ''}`.toLowerCase();
-          return keywords.some(kw => text.includes(kw));
-        });
+    let base = activeFilter === 'all' ? articles : filterArticles;
     if (sortBy === 'score') {
       return [...base].sort((a, b) => (b.accuracy?.score || 0) - (a.accuracy?.score || 0));
     }
@@ -173,7 +189,7 @@ export default function FeedScreen() {
       >
         <TouchableOpacity
           style={[s.filterChip, activeFilter === 'all' && s.filterChipActive]}
-          onPress={() => setActiveFilter('all')}
+          onPress={() => applyFilter('all')}
         >
           <Text style={[s.filterChipText, activeFilter === 'all' && s.filterChipTextActive]}>
             🌐 All
@@ -187,7 +203,7 @@ export default function FeedScreen() {
             <TouchableOpacity
               key={id}
               style={[s.filterChip, active && s.filterChipActive]}
-              onPress={() => setActiveFilter(active ? 'all' : id)}
+              onPress={() => applyFilter(active ? 'all' : id)}
             >
               <Text style={[s.filterChipText, active && s.filterChipTextActive]}>
                 {meta.emoji} {meta.label}
@@ -235,7 +251,11 @@ export default function FeedScreen() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
+      {filterLoading ? (
+        <View style={[s.list, { padding: 16 }]}>
+          {[1,2,3].map(i => <SkeletonCard key={i} />)}
+        </View>
+      ) : <FlatList
         data={sorted}
         keyExtractor={item => item.id}
         renderItem={({ item }) => <NewsCard article={item} />}
@@ -256,14 +276,14 @@ export default function FeedScreen() {
             <Text style={[s.emptyNote, { color: theme.subtext }]}>
               {activeFilter === 'all'
                 ? 'No articles found. Pull down to refresh.'
-                : `No articles matched "${INTEREST_META[activeFilter]?.label || activeFilter}". Try All.`}
+                : `No articles found for "${INTEREST_META[activeFilter]?.label || activeFilter}". Try All.`}
             </Text>
-            <TouchableOpacity onPress={() => setActiveFilter('all')}>
+            <TouchableOpacity onPress={() => applyFilter('all')}>
               <Text style={[s.emptyLink, { color: theme.primary }]}>Show all articles</Text>
             </TouchableOpacity>
           </View>
         }
-      />
+      />}
     </View>
   );
 }
