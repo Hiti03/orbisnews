@@ -1,0 +1,22 @@
+[
+  { "code": "us", "name": "United States", "capital": "Washington D.C.", "flag": "🇺🇸" },
+  { "code": "gb", "name": "United Kingdom", "capital": "London", "flag": "🇬🇧" },
+  { "code": "in", "name": "India", "capital": "New Delhi", "flag": "🇮🇳" },
+  { "code": "cn", "name": "China", "capital": "Beijing", "flag": "🇨🇳" },
+  { "code": "ru", "name": "Russia", "capital": "Moscow", "flag": "🇷🇺" },
+  { "code": "de", "name": "Germany", "capital": "Berlin", "flag": "🇩🇪" },
+  { "code": "fr", "name": "France", "capital": "Paris", "flag": "🇫🇷" },
+  { "code": "jp", "name": "Japan", "capital": "Tokyo", "flag": "🇯🇵" },
+  { "code": "br", "name": "Brazil", "capital": "Brasilia", "flag": "🇧🇷" },
+  { "code": "au", "name": "Australia", "capital": "Canberra", "flag": "🇦🇺" },
+  { "code": "ca", "name": "Canada", "capital": "Ottawa", "flag": "🇨🇦" },
+  { "code": "za", "name": "South Africa", "capital": "Pretoria", "flag": "🇿🇦" },
+  { "code": "ng", "name": "Nigeria", "capital": "Abuja", "flag": "🇳🇬" },
+  { "code": "eg", "name": "Egypt", "capital": "Cairo", "flag": "🇪🇬" },
+  { "code": "mx", "name": "Mexico", "capital": "Mexico City", "flag": "🇲🇽" },
+  { "code": "ar", "name": "Argentina", "capital": "Buenos Aires", "flag": "🇦🇷" },
+  { "code": "sa", "name": "Saudi Arabia", "capital": "Riyadh", "flag": "🇸🇦" },
+  { "code": "ae", "name": "United Arab Emirates", "capital": "Abu Dhabi", "flag": "🇦🇪" },
+  { "code": "sg", "name": "Singapore", "capital": "Singapore", "flag": "🇸🇬" },
+  { "code": "kr", "name": "South Korea", "capital": "Seoul", "flag": "🇰🇷" }
+]
