@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 import { useTheme } from '../../context/ThemeContext';
 import { useRouter } from 'expo-router';
 
@@ -39,6 +40,7 @@ export default function SettingsScreen() {
 
   const [country, setCountry] = useState('');
   const [interests, setInterests] = useState([]);
+  const [detectedCity, setDetectedCity] = useState(null);
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [showInterestModal, setShowInterestModal] = useState(false);
   const [tempInterests, setTempInterests] = useState([]);
@@ -46,12 +48,38 @@ export default function SettingsScreen() {
   useEffect(() => { loadSettings(); }, []);
 
   async function loadSettings() {
-    const [c, i] = await Promise.all([
+    const [c, i, city] = await Promise.all([
       AsyncStorage.getItem('user_country'),
       AsyncStorage.getItem('user_interests'),
+      AsyncStorage.getItem('user_city'),
     ]);
     if (c) setCountry(c);
     if (i) setInterests(JSON.parse(i));
+    if (city) setDetectedCity(city);
+  }
+
+  async function refreshLocation() {
+    try {
+      await AsyncStorage.removeItem('user_city');
+      setDetectedCity(null);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Location permission is required to detect your city.');
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const geo = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+      const city = geo[0]?.city || geo[0]?.subregion || null;
+      if (city) {
+        await AsyncStorage.setItem('user_city', city);
+        setDetectedCity(city);
+        Alert.alert('Location updated', `Your local news is now set to ${city}.`);
+      } else {
+        Alert.alert('Could not detect city', 'Try again or check your GPS settings.');
+      }
+    } catch {
+      Alert.alert('Error', 'Could not get location. Please try again.');
+    }
   }
 
   async function saveCountry(c) {
@@ -146,6 +174,17 @@ export default function SettingsScreen() {
             </View>
           </View>
           <Text style={[s.rowArrow, { color: theme.primary }]}>Edit ›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={s.row} onPress={refreshLocation}>
+          <View style={s.rowLeft}>
+            <Text style={s.rowEmoji}>📡</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.rowTitle}>Local News Location</Text>
+              <Text style={s.rowSub} numberOfLines={1}>{detectedCity || 'Not detected yet'}</Text>
+            </View>
+          </View>
+          <Text style={[s.rowArrow, { color: theme.primary }]}>Refresh ›</Text>
         </TouchableOpacity>
 
         {/* ── App ── */}

@@ -13,17 +13,17 @@ const CATEGORIES = [
   { id: 'breaking',      label: '🔴 Breaking',     type: 'trending' },
   { id: 'technology',    label: '💻 Tech',           type: 'headlines', cat: 'technology' },
   { id: 'business',      label: '💼 Business',       type: 'headlines', cat: 'business' },
-  { id: 'politics',      label: '🏛️ Politics',       type: 'search',    q: 'politics government' },
+  { id: 'geopolitics',   label: '🏛️ Politics',       type: 'headlines', cat: 'geopolitics' },
   { id: 'sports',        label: '⚽ Sports',          type: 'headlines', cat: 'sports' },
   { id: 'science',       label: '🔬 Science',         type: 'headlines', cat: 'science' },
   { id: 'health',        label: '🏥 Health',          type: 'headlines', cat: 'health' },
   { id: 'entertainment', label: '🎬 Entertainment',   type: 'headlines', cat: 'entertainment' },
   { id: 'world',         label: '🌍 World',           type: 'search',    q: 'world news international' },
-  { id: 'climate',       label: '🌱 Climate',         type: 'search',    q: 'climate change environment' },
+  { id: 'environment',   label: '🌱 Climate',         type: 'headlines', cat: 'environment' },
   { id: 'india',         label: '🇮🇳 India',           type: 'search',    q: 'India news' },
   { id: 'cricket',       label: '🏏 Cricket',          type: 'search',    q: 'cricket IPL' },
   { id: 'ai',            label: '🤖 AI',               type: 'search',    q: 'artificial intelligence AI' },
-  { id: 'space',         label: '🚀 Space',             type: 'search',    q: 'space NASA SpaceX' },
+  { id: 'space',         label: '🚀 Space',             type: 'headlines', cat: 'space' },
 ];
 
 const SORT_OPTIONS = [
@@ -458,10 +458,10 @@ export default function SearchScreen() {
               ListHeaderComponent={listHeader}
               ListEmptyComponent={
                 <View style={s.emptyState}>
-                  <Text style={s.emptyEmoji}>🔍</Text>
-                  <Text style={[s.emptyTitle, { color: theme.text }]}>No results found</Text>
+                  <Text style={s.emptyEmoji}>🕳️</Text>
+                  <Text style={[s.emptyTitle, { color: theme.text }]}>The void stares back.</Text>
                   <Text style={[s.emptyNote, { color: theme.subtext }]}>
-                    Try different keywords or remove filters
+                    No results for that. Try different words, drop a filter, or accept that the internet has gaps.
                   </Text>
                 </View>
               }
@@ -478,7 +478,7 @@ export default function SearchScreen() {
                         <Text style={[s.loadMoreText, { color: theme.primary }]}>Load more</Text>
                       </TouchableOpacity>
                     ) : (
-                      <Text style={[s.endText, { color: theme.subtext }]}>You're all caught up</Text>
+                      <Text style={[s.endText, { color: theme.subtext }]}>That's everything. Why read the same news twice?</Text>
                     )}
                   </View>
                 ) : null

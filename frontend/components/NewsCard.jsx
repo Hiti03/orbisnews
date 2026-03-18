@@ -18,7 +18,7 @@ function AccuracyBadge({ accuracy }) {
     <View style={[badge.wrap, { borderColor: color }]}>
       <View style={[badge.dot, { backgroundColor: color }]} />
       <Text style={[badge.text, { color }]}>
-        {accuracy?.label || 'Unknown'} · {accuracy?.score}%
+        Source credibility: {accuracy?.label || 'Unknown'} ({accuracy?.score}%)
       </Text>
     </View>
   );

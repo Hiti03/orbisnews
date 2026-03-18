@@ -4,7 +4,6 @@ import {
 } from 'react-native';
 import { useState, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
 import { useTheme } from '../../context/ThemeContext';
 import { useRouter, useFocusEffect } from 'expo-router';
 import NewsCard from '../../components/NewsCard';
@@ -67,22 +66,6 @@ export default function FeedScreen() {
     useCallback(() => { loadData(); }, [])
   );
 
-  async function getCity() {
-    try {
-      const cached = await AsyncStorage.getItem('user_city');
-      if (cached) return cached;
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return null;
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const geo = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
-      const detectedCity = geo[0]?.city || geo[0]?.subregion || null;
-      if (detectedCity) await AsyncStorage.setItem('user_city', detectedCity);
-      return detectedCity;
-    } catch {
-      return null;
-    }
-  }
-
   async function loadData(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
@@ -96,7 +79,7 @@ export default function FeedScreen() {
       const c = storedCountry || 'United States of America';
       setInterests(parsed);
       setCountry(c);
-      const detectedCity = await getCity();
+      const detectedCity = await AsyncStorage.getItem('user_city');
       setCity(detectedCity);
       const data = await fetchPersonalizedFeed(parsed, c, isRefresh, false, detectedCity);
       setArticles(data);
@@ -291,16 +274,20 @@ export default function FeedScreen() {
         }
         ListEmptyComponent={
           <View style={s.emptyFiltered}>
-            <Text style={s.emptyEmoji}>🔍</Text>
-            <Text style={[s.emptyTitle, { color: theme.text }]}>No matches</Text>
+            <Text style={s.emptyEmoji}>🗞️</Text>
+            <Text style={[s.emptyTitle, { color: theme.text }]}>
+              {activeFilter === 'all' ? 'The presses are quiet.' : `${INTEREST_META[activeFilter]?.emoji || ''} Nothing fresh here.`}
+            </Text>
             <Text style={[s.emptyNote, { color: theme.subtext }]}>
               {activeFilter === 'all'
-                ? 'No articles found. Pull down to refresh.'
-                : `No articles found for "${INTEREST_META[activeFilter]?.label || activeFilter}". Try All.`}
+                ? "You've seen it all. Impressive. Pull down to check for new stories."
+                : `Looks like ${INTEREST_META[activeFilter]?.label || 'this topic'} journalists are on a coffee break. Check back soon.`}
             </Text>
-            <TouchableOpacity onPress={() => applyFilter('all')}>
-              <Text style={[s.emptyLink, { color: theme.primary }]}>Show all articles</Text>
-            </TouchableOpacity>
+            {activeFilter !== 'all' && (
+              <TouchableOpacity onPress={() => applyFilter('all')}>
+                <Text style={[s.emptyLink, { color: theme.primary }]}>Back to all articles →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
       />}

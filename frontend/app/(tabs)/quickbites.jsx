@@ -99,11 +99,11 @@ function BiteCard({ article, height, index, total }) {
           </View>
         )}
 
-        {/* Accuracy */}
+        {/* Source credibility */}
         <View style={styles.accuracyRow}>
           <View style={[styles.accuracyDot, { backgroundColor: accuracyColor }]} />
           <Text style={[styles.accuracyLabel, { color: accuracyColor }]}>
-            {article.accuracy?.label} · {article.accuracy?.score}%
+            Source credibility: {article.accuracy?.label} ({article.accuracy?.score}%)
           </Text>
         </View>
 
@@ -175,8 +175,6 @@ export default function QuickBitesScreen() {
   }, [currentIndex, articles]);
 
   async function load(isRefresh = false) {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
     setError(null);
     try {
       const [si, sc] = await Promise.all([
@@ -186,12 +184,31 @@ export default function QuickBitesScreen() {
       const interests = si ? JSON.parse(si) : [];
       const country = sc || 'United States of America';
 
+      if (!isRefresh) {
+        const cached = await AsyncStorage.getItem('quickbites_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setArticles(parsed);
+          setLoading(false);
+          parsed.slice(0, 5).forEach(a => { if (a.imageUrl) Image.prefetch(a.imageUrl).catch(() => {}); });
+          fetchQuickBites(interests, country, false).then(fresh => {
+            if (fresh.length) {
+              setArticles(fresh);
+              AsyncStorage.setItem('quickbites_cache', JSON.stringify(fresh)).catch(() => {});
+              fresh.slice(0, 5).forEach(a => { if (a.imageUrl) Image.prefetch(a.imageUrl).catch(() => {}); });
+            }
+          }).catch(() => {});
+          return;
+        }
+      }
+
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+
       const data = await fetchQuickBites(interests, country, isRefresh);
       setArticles(data);
-      // Prefetch first 5 images immediately
-      data.slice(0, 5).forEach(a => {
-        if (a.imageUrl) Image.prefetch(a.imageUrl).catch(() => {});
-      });
+      AsyncStorage.setItem('quickbites_cache', JSON.stringify(data)).catch(() => {});
+      data.slice(0, 5).forEach(a => { if (a.imageUrl) Image.prefetch(a.imageUrl).catch(() => {}); });
     } catch (e) {
       setError('Could not load Quick Bites.\n' + e.message);
     } finally {
@@ -255,8 +272,8 @@ export default function QuickBitesScreen() {
         }
         ListEmptyComponent={
           <View style={styles.center}>
-            <Text style={styles.errorEmoji}>📭</Text>
-            <Text style={styles.loadingText}>No Quick Bites available right now.</Text>
+            <Text style={styles.errorEmoji}>🛋️</Text>
+            <Text style={styles.loadingText}>You're ahead of the news cycle.{'\n'}Nothing new since you last checked.{'\n'}Pull down to see if the world caught up.</Text>
           </View>
         }
       />
