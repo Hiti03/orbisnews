@@ -221,6 +221,22 @@ const INTEREST_KEYWORDS = {
   space:          'space NASA SpaceX rocket satellite asteroid',
 };
 
+// Strict title-only keywords — unambiguous terms that only appear in topic-specific headlines
+const STRICT_KEYWORDS = {
+  geopolitics:    'geopolitics OR diplomacy OR "foreign policy" OR "international relations" OR sanctions OR NATO OR bilateral',
+  technology:     'technology OR "artificial intelligence" OR software OR startup OR cybersecurity OR semiconductor',
+  stocks:         'stocks OR "stock market" OR earnings OR "interest rate" OR inflation OR "GDP" OR "central bank" OR Sensex OR Nifty OR Nasdaq',
+  infrastructure: 'infrastructure OR construction OR highway OR railway OR airport OR metro OR "urban development"',
+  science:        'science OR research OR discovery OR experiment OR biology OR physics OR genetics OR "scientific study"',
+  health:         'health OR medicine OR pandemic OR vaccine OR disease OR hospital OR cancer OR treatment OR "mental health"',
+  sports:         'sports OR cricket OR football OR basketball OR tennis OR FIFA OR IPL OR Olympics OR "Formula 1" OR tournament OR championship',
+  entertainment:  'entertainment OR movie OR film OR music OR celebrity OR Oscar OR Grammy OR Netflix OR "box office"',
+  environment:    'environment OR climate OR sustainability OR "carbon emission" OR deforestation OR wildfire OR "renewable energy"',
+  military:       'military OR defence OR army OR navy OR "air force" OR warfare OR missile OR troops OR airstrike',
+  energy:         'energy OR "oil price" OR "natural gas" OR OPEC OR "nuclear power" OR "solar energy" OR "wind power"',
+  space:          'space OR NASA OR SpaceX OR rocket OR satellite OR asteroid OR Mars OR "space mission" OR ISRO',
+};
+
 // Single-word keywords only — multi-word strings break EventRegistry when combined with percentile filters
 const CATEGORY_KEYWORDS = {
   technology:    'technology',
@@ -593,11 +609,16 @@ router.post('/feed', async (req, res) => {
       ? interests.slice(0, 5).map(i => INTEREST_KEYWORDS[i] || i).join(' OR ')
       : 'world news politics science technology';
 
-    // strict mode: only fetch interest-specific articles, no general/country mixing
+    const strictKeywords = interests.length > 0
+      ? interests.slice(0, 1).map(i => STRICT_KEYWORDS[i] || INTEREST_KEYWORDS[i] || i).join(' OR ')
+      : interestKeywords;
+
+    // strict mode: title-only match with unambiguous keywords — no general/country mixing
     const calls = strict
       ? [
           apiPost({
-            keyword: interestKeywords,
+            keyword: strictKeywords,
+            keywordLoc: 'title',
             articlesCount: 40,
             articlesSortBy: 'date',
             dateStart,
