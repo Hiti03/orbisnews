@@ -579,8 +579,8 @@ router.get('/search', async (req, res) => {
 
 // ─── POST /api/news/feed  { interests: [...], country: "India" } ──────────────
 router.post('/feed', async (req, res) => {
-  const { interests = [], country = 'world', refresh = false, strict = false } = req.body;
-  const cacheKey = `feed_${strict ? 'strict' : 'mix'}_${country}_${interests.join('_')}`;
+  const { interests = [], country = 'world', refresh = false, strict = false, city = null } = req.body;
+  const cacheKey = `feed_${strict ? 'strict' : 'mix'}_${country}_${city || ''}_${interests.join('_')}`;
   if (refresh) cache.del(cacheKey);
   const cached = cache.get(cacheKey);
   if (cached) return res.json(cached);
@@ -623,6 +623,16 @@ router.post('/feed', async (req, res) => {
           countryUri
             ? apiPost({
                 sourceLocationUri: countryUri,
+                articlesCount: 15,
+                articlesSortBy: 'date',
+                dateStart,
+              })
+            : Promise.resolve({ articles: [] }),
+          // City-specific articles (if location was shared)
+          city
+            ? apiPost({
+                keyword: city,
+                keywordLoc: 'title,body',
                 articlesCount: 15,
                 articlesSortBy: 'date',
                 dateStart,
