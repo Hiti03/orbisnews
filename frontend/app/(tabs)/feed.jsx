@@ -9,7 +9,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useRouter, useFocusEffect } from 'expo-router';
 import NewsCard from '../../components/NewsCard';
 import SkeletonCard from '../../components/SkeletonCard';
-import { fetchPersonalizedFeed } from '../../services/newsApi';
+import { fetchPersonalizedFeed, fetchHeadlines } from '../../services/newsApi';
 
 const INTEREST_META = {
   geopolitics:    { label: 'Geopolitics',        emoji: '🌐' },
@@ -119,7 +119,7 @@ export default function FeedScreen() {
     setActiveFilter(id);
     setFilterLoading(true);
     try {
-      const data = await fetchPersonalizedFeed([id], countryVal, false, true);
+      const data = await fetchHeadlines(id);
       setFilterArticles(data);
     } catch {
       setFilterArticles([]);
