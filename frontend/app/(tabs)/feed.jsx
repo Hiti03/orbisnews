@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useState, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 import { useTheme } from '../../context/ThemeContext';
 import { useRouter, useFocusEffect } from 'expo-router';
 import NewsCard from '../../components/NewsCard';
@@ -59,11 +60,28 @@ export default function FeedScreen() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [filterArticles, setFilterArticles] = useState([]);
   const [filterLoading, setFilterLoading] = useState(false);
+  const [city, setCity] = useState(null);
   const countryVal = country;
 
   useFocusEffect(
     useCallback(() => { loadData(); }, [])
   );
+
+  async function getCity() {
+    try {
+      const cached = await AsyncStorage.getItem('user_city');
+      if (cached) return cached;
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return null;
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const geo = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+      const detectedCity = geo[0]?.city || geo[0]?.subregion || null;
+      if (detectedCity) await AsyncStorage.setItem('user_city', detectedCity);
+      return detectedCity;
+    } catch {
+      return null;
+    }
+  }
 
   async function loadData(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
@@ -78,7 +96,9 @@ export default function FeedScreen() {
       const c = storedCountry || 'United States of America';
       setInterests(parsed);
       setCountry(c);
-      const data = await fetchPersonalizedFeed(parsed, c, isRefresh);
+      const detectedCity = await getCity();
+      setCity(detectedCity);
+      const data = await fetchPersonalizedFeed(parsed, c, isRefresh, false, detectedCity);
       setArticles(data);
       setActiveFilter('all');
       setFilterArticles([]);
@@ -240,7 +260,7 @@ export default function FeedScreen() {
         <View>
           <Text style={s.title}>📰 My Feed</Text>
           <Text style={[s.subtitle, { color: theme.subtext }]}>
-            {interests.length} interest{interests.length !== 1 ? 's' : ''} · {country}
+            {interests.length} interest{interests.length !== 1 ? 's' : ''} · {city ? `${city}, ` : ''}{country}
           </Text>
         </View>
         <TouchableOpacity

@@ -31,10 +31,28 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "OrbisNews uses your location to show local news near you."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3d414b0b-55ea-4ab3-951f-b80d12f37738"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3d414b0b-55ea-4ab3-951f-b80d12f37738"
     }
   }
 }
