@@ -493,10 +493,12 @@ router.get('/headlines', async (req, res) => {
   if (cached) return res.json(cached);
 
   try {
-    const keyword = CATEGORY_KEYWORDS[category] || category;
+    const keyword = STRICT_KEYWORDS[category] || CATEGORY_KEYWORDS[category] || category;
+    const useTitle = !!STRICT_KEYWORDS[category];
     const { articles: raw } = await apiPost({
       keyword,
-      articlesCount: 25,
+      ...(useTitle ? { keywordLoc: 'title' } : {}),
+      articlesCount: 30,
       articlesSortBy: 'sourceImportance',
       startSourceRankPercentile: 0,
       endSourceRankPercentile: 40,
