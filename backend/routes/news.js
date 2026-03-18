@@ -579,8 +579,8 @@ router.get('/search', async (req, res) => {
 
 // ─── POST /api/news/feed  { interests: [...], country: "India" } ──────────────
 router.post('/feed', async (req, res) => {
-  const { interests = [], country = 'world', refresh = false } = req.body;
-  const cacheKey = `feed_${country}_${interests.join('_')}`;
+  const { interests = [], country = 'world', refresh = false, strict = false } = req.body;
+  const cacheKey = `feed_${strict ? 'strict' : 'mix'}_${country}_${interests.join('_')}`;
   if (refresh) cache.del(cacheKey);
   const cached = cache.get(cacheKey);
   if (cached) return res.json(cached);
@@ -589,37 +589,46 @@ router.post('/feed', async (req, res) => {
     const countryUri = COUNTRY_URIS[country.toLowerCase()];
     const dateStart = dateStr(7);
 
-    // Build keyword query from interests
     const interestKeywords = interests.length > 0
       ? interests.slice(0, 5).map(i => INTEREST_KEYWORDS[i] || i).join(' OR ')
       : 'world news politics science technology';
 
-    const calls = [
-      // Top articles from reputable sources (fresh & quality)
-      apiPost({
-        articlesCount: 20,
-        articlesSortBy: 'sourceImportance',
-        startSourceRankPercentile: 0,
-        endSourceRankPercentile: 30,
-        dateStart,
-      }),
-      // Interest-matched articles
-      apiPost({
-        keyword: interestKeywords,
-        articlesCount: 25,
-        articlesSortBy: 'date',
-        dateStart,
-      }),
-      // Country-specific articles
-      countryUri
-        ? apiPost({
-            sourceLocationUri: countryUri,
-            articlesCount: 15,
+    // strict mode: only fetch interest-specific articles, no general/country mixing
+    const calls = strict
+      ? [
+          apiPost({
+            keyword: interestKeywords,
+            articlesCount: 40,
             articlesSortBy: 'date',
             dateStart,
-          })
-        : Promise.resolve({ articles: [] }),
-    ];
+          }),
+        ]
+      : [
+          // Top articles from reputable sources (fresh & quality)
+          apiPost({
+            articlesCount: 20,
+            articlesSortBy: 'sourceImportance',
+            startSourceRankPercentile: 0,
+            endSourceRankPercentile: 30,
+            dateStart,
+          }),
+          // Interest-matched articles
+          apiPost({
+            keyword: interestKeywords,
+            articlesCount: 25,
+            articlesSortBy: 'date',
+            dateStart,
+          }),
+          // Country-specific articles
+          countryUri
+            ? apiPost({
+                sourceLocationUri: countryUri,
+                articlesCount: 15,
+                articlesSortBy: 'date',
+                dateStart,
+              })
+            : Promise.resolve({ articles: [] }),
+        ];
 
     const results = await Promise.all(calls);
     const articles = mergeDedupe(

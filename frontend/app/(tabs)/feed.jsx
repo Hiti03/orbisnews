@@ -99,7 +99,7 @@ export default function FeedScreen() {
     setActiveFilter(id);
     setFilterLoading(true);
     try {
-      const data = await fetchPersonalizedFeed([id], countryVal, false);
+      const data = await fetchPersonalizedFeed([id], countryVal, false, true);
       setFilterArticles(data);
     } catch {
       setFilterArticles([]);

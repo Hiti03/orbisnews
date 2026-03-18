@@ -36,11 +36,11 @@ export async function fetchXTrending(country) {
   return data; // { trends, country, updatedAt }
 }
 
-export async function fetchPersonalizedFeed(interests, country, forceRefresh = false) {
+export async function fetchPersonalizedFeed(interests, country, forceRefresh = false, strict = false) {
   const data = await apiFetch(`${BASE_URL}/news/feed`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ interests, country, refresh: forceRefresh }),
+    body: JSON.stringify({ interests, country, refresh: forceRefresh, strict }),
   });
   return data.articles || [];
 }
