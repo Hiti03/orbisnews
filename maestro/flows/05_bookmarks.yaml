@@ -1,0 +1,17 @@
+appId: com.orbisnews
+name: Bookmarks
+---
+- launchApp
+- tapOn: "Search"
+- tapOn: "⚽ Sports"
+- waitForAnimationToEnd
+- assertNotVisible: "Searching..."
+- tapOn:
+    index: 0
+    text: "🔖"
+- tapOn: "Bookmarks"
+- assertNotVisible: "No bookmarks yet"
+- tapOn:
+    index: 0
+    text: "🔖"
+- tapOn: "Bookmarks"

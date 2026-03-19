@@ -1,0 +1,14 @@
+appId: com.orbisnews
+name: Settings
+---
+- launchApp
+- tapOn: "Settings"
+- assertVisible: "Settings"
+- tapOn: "Country"
+- assertVisible: "Select Country"
+- tapOn: "United States of America"
+- tapOn: "Interests"
+- assertVisible: "Edit Interests"
+- tapOn: "Save"
+- tapOn: "Dark Mode"
+- tapOn: "Dark Mode"

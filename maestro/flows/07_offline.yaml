@@ -1,0 +1,10 @@
+appId: com.orbisnews
+name: Offline Handling
+---
+- launchApp
+- tapOn: "Quick Bites"
+- waitForAnimationToEnd
+- assertNotVisible: "Loading Quick Bites"
+- tapOn: "My Feed"
+- waitForAnimationToEnd
+- assertNotVisible: "Could not load feed"

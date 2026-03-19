@@ -1,0 +1,18 @@
+appId: com.orbisnews
+name: Search
+---
+- launchApp
+- tapOn: "Search"
+- assertVisible: "Search News"
+- tapOn: "⚽ Sports"
+- waitForAnimationToEnd
+- assertNotVisible: "Searching..."
+- tapOn: "✕"
+- assertVisible: "Search News"
+- tapOn:
+    id: "search-input"
+- inputText: "cricket IPL"
+- pressKey: Enter
+- waitForAnimationToEnd
+- assertNotVisible: "Searching..."
+- tapOn: "✕"

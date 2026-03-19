@@ -1,0 +1,18 @@
+appId: com.orbisnews
+name: Onboarding Flow
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Where are you from?"
+- assertVisible: "Tap a country to continue"
+- tapOn: "India"
+- assertVisible: "What interests you?"
+- assertVisible: "Pick at least 5 topics"
+- tapOn: "Sports"
+- tapOn: "Technology"
+- tapOn: "Cricket"
+- tapOn: "Gaming"
+- tapOn: "Music"
+- assertVisible: "Let's Go!"
+- tapOn: "Let's Go!"
+- assertVisible: "My Feed"

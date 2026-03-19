@@ -1,0 +1,12 @@
+appId: com.orbisnews
+name: Quick Bites
+---
+- launchApp
+- tapOn: "Quick Bites"
+- waitForAnimationToEnd
+- assertNotVisible: "Loading Quick Bites"
+- swipeUp
+- swipeUp
+- swipeUp
+- swipeUp
+- swipeDown

@@ -1,0 +1,20 @@
+appId: com.orbisnews
+name: My Feed
+---
+- launchApp
+- tapOn: "My Feed"
+- assertVisible: "My Feed"
+- waitForAnimationToEnd
+- assertVisible: "Smart"
+- tapOn: "Latest"
+- tapOn: "Top Rated"
+- tapOn: "Smart"
+- scroll
+- scroll
+- swipeUp
+- tapOn:
+    index: 0
+    text: "Read More"
+- assertVisible: "Back"
+- tapOn: "Back"
+- assertVisible: "My Feed"
