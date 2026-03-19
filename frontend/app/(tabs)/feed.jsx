@@ -101,7 +101,7 @@ export default function FeedScreen() {
       });
     }
     return [...base].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-  }, [articles, sortBy, activeFilter]);
+  }, [articles, sortBy]);
 
   const s = makeStyles(theme);
 
@@ -222,7 +222,7 @@ export default function FeedScreen() {
             </Text>
           </View>
         }
-      />}
+      />
     </View>
   );
 }
