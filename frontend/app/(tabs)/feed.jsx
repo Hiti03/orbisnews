@@ -1,6 +1,6 @@
 import {
   View, Text, StyleSheet, FlatList,
-  RefreshControl, TouchableOpacity, ScrollView,
+  RefreshControl, TouchableOpacity,
 } from 'react-native';
 import { useState, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,7 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useRouter, useFocusEffect } from 'expo-router';
 import NewsCard from '../../components/NewsCard';
 import SkeletonCard from '../../components/SkeletonCard';
-import { fetchPersonalizedFeed, fetchHeadlines } from '../../services/newsApi';
+import { fetchPersonalizedFeed } from '../../services/newsApi';
 
 const INTEREST_META = {
   geopolitics:    { label: 'Geopolitics',        emoji: '🌐' },
@@ -56,9 +56,6 @@ export default function FeedScreen() {
   const [interests, setInterests] = useState([]);
   const [country, setCountry] = useState('');
   const [sortBy, setSortBy] = useState('smart');
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [filterArticles, setFilterArticles] = useState([]);
-  const [filterLoading, setFilterLoading] = useState(false);
   const [city, setCity] = useState(null);
   const countryVal = country;
 
@@ -83,8 +80,6 @@ export default function FeedScreen() {
       setCity(detectedCity);
       const data = await fetchPersonalizedFeed(parsed, c, isRefresh, false, detectedCity);
       setArticles(data);
-      setActiveFilter('all');
-      setFilterArticles([]);
     } catch (e) {
       setError('Could not load feed.\nMake sure the backend is running.');
     } finally {
@@ -93,26 +88,8 @@ export default function FeedScreen() {
     }
   }
 
-  async function applyFilter(id) {
-    if (id === 'all') {
-      setActiveFilter('all');
-      setFilterArticles([]);
-      return;
-    }
-    setActiveFilter(id);
-    setFilterLoading(true);
-    try {
-      const data = await fetchHeadlines(id);
-      setFilterArticles(data);
-    } catch {
-      setFilterArticles([]);
-    } finally {
-      setFilterLoading(false);
-    }
-  }
-
   const sorted = useMemo(() => {
-    let base = activeFilter === 'all' ? articles : filterArticles;
+    let base = articles;
     if (sortBy === 'score') {
       return [...base].sort((a, b) => (b.accuracy?.score || 0) - (a.accuracy?.score || 0));
     }
@@ -184,38 +161,6 @@ export default function FeedScreen() {
 
   const listHeader = (
     <View>
-      {/* Interest filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.filterBar}
-      >
-        <TouchableOpacity
-          style={[s.filterChip, activeFilter === 'all' && s.filterChipActive]}
-          onPress={() => applyFilter('all')}
-        >
-          <Text style={[s.filterChipText, activeFilter === 'all' && s.filterChipTextActive]}>
-            🌐 All
-          </Text>
-        </TouchableOpacity>
-        {interests.map(id => {
-          const meta = INTEREST_META[id];
-          if (!meta) return null;
-          const active = activeFilter === id;
-          return (
-            <TouchableOpacity
-              key={id}
-              style={[s.filterChip, active && s.filterChipActive]}
-              onPress={() => applyFilter(active ? 'all' : id)}
-            >
-              <Text style={[s.filterChipText, active && s.filterChipTextActive]}>
-                {meta.emoji} {meta.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
       {/* Sort bar */}
       <View style={s.sortBar}>
         {SORT_OPTIONS.map(opt => (
@@ -254,11 +199,7 @@ export default function FeedScreen() {
         </TouchableOpacity>
       </View>
 
-      {filterLoading ? (
-        <View style={[s.list, { padding: 16 }]}>
-          {[1,2,3].map(i => <SkeletonCard key={i} />)}
-        </View>
-      ) : <FlatList
+      <FlatList
         data={sorted}
         keyExtractor={item => item.id}
         renderItem={({ item }) => <NewsCard article={item} />}
@@ -275,19 +216,10 @@ export default function FeedScreen() {
         ListEmptyComponent={
           <View style={s.emptyFiltered}>
             <Text style={s.emptyEmoji}>🗞️</Text>
-            <Text style={[s.emptyTitle, { color: theme.text }]}>
-              {activeFilter === 'all' ? 'The presses are quiet.' : `${INTEREST_META[activeFilter]?.emoji || ''} Nothing fresh here.`}
-            </Text>
+            <Text style={[s.emptyTitle, { color: theme.text }]}>The presses are quiet.</Text>
             <Text style={[s.emptyNote, { color: theme.subtext }]}>
-              {activeFilter === 'all'
-                ? "You've seen it all. Impressive. Pull down to check for new stories."
-                : `Looks like ${INTEREST_META[activeFilter]?.label || 'this topic'} journalists are on a coffee break. Check back soon.`}
+              You've seen it all. Impressive. Pull down to check for new stories.
             </Text>
-            {activeFilter !== 'all' && (
-              <TouchableOpacity onPress={() => applyFilter('all')}>
-                <Text style={[s.emptyLink, { color: theme.primary }]}>Back to all articles →</Text>
-              </TouchableOpacity>
-            )}
           </View>
         }
       />}

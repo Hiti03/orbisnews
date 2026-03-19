@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -18,11 +17,9 @@ const COUNTRIES = [
 export default function Welcome() {
   const router = useRouter();
   const { theme, isDark, toggleTheme } = useTheme();
-  const [selectedCountry, setSelectedCountry] = useState(null);
 
-  async function handleContinue() {
-    if (!selectedCountry) return;
-    await AsyncStorage.setItem('user_country', selectedCountry);
+  async function selectCountry(country) {
+    await AsyncStorage.setItem('user_country', country);
     router.push('/onboarding/interests');
   }
 
@@ -47,33 +44,21 @@ export default function Welcome() {
         </View>
 
         <Text style={s.sectionTitle}>Where are you from?</Text>
+        <Text style={s.hint}>Tap a country to continue</Text>
 
         <View style={s.countryList}>
           {COUNTRIES.map(country => (
             <TouchableOpacity
               key={country}
-              style={[s.countryRow, selectedCountry === country && s.countryRowSelected]}
-              onPress={() => setSelectedCountry(country)}
+              style={s.countryRow}
+              onPress={() => selectCountry(country)}
+              activeOpacity={0.7}
             >
-              <Text style={[s.countryName, selectedCountry === country && s.countryNameSelected]}>
-                {country}
-              </Text>
-              {selectedCountry === country && (
-                <Text style={s.countryCheck}>✓</Text>
-              )}
+              <Text style={[s.countryName, { color: theme.text }]}>{country}</Text>
+              <Text style={[s.arrow, { color: theme.subtext }]}>›</Text>
             </TouchableOpacity>
           ))}
         </View>
-
-        <TouchableOpacity
-          style={[s.button, !selectedCountry && s.buttonDisabled]}
-          onPress={handleContinue}
-          disabled={!selectedCountry}
-        >
-          <Text style={s.buttonText}>
-            {selectedCountry ? `Continue as ${selectedCountry} →` : 'Select your country'}
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -92,23 +77,16 @@ function makeStyles(theme) {
       marginBottom: 24, borderWidth: 1, borderColor: theme.border,
     },
     label: { color: theme.text, fontSize: 15, fontWeight: '500' },
-    sectionTitle: { color: theme.text, fontSize: 18, fontWeight: '600', marginBottom: 14 },
-    countryList: { marginBottom: 24, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: theme.border },
+    sectionTitle: { color: theme.text, fontSize: 18, fontWeight: '600', marginBottom: 4 },
+    hint: { color: theme.subtext, fontSize: 13, marginBottom: 14 },
+    countryList: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: theme.border },
     countryRow: {
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
       paddingVertical: 14, paddingHorizontal: 16,
       backgroundColor: theme.card,
       borderBottomWidth: 1, borderBottomColor: theme.border,
     },
-    countryRowSelected: { backgroundColor: theme.primary + '18' },
-    countryName: { fontSize: 15, color: theme.text, flex: 1 },
-    countryNameSelected: { color: theme.primary, fontWeight: '600' },
-    countryCheck: { color: theme.primary, fontWeight: 'bold', fontSize: 16, marginLeft: 8 },
-    button: {
-      backgroundColor: theme.primary, borderRadius: 14, padding: 16,
-      alignItems: 'center', marginTop: 4,
-    },
-    buttonDisabled: { backgroundColor: theme.border },
-    buttonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+    countryName: { fontSize: 15, flex: 1 },
+    arrow: { fontSize: 20, marginLeft: 8 },
   });
 }
