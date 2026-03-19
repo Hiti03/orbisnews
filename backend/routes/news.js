@@ -530,14 +530,13 @@ router.get('/headlines', async (req, res) => {
 
   try {
     const keyword = STRICT_KEYWORDS[category] || CATEGORY_KEYWORDS[category] || category;
-    const useTitle = !!STRICT_KEYWORDS[category];
     const { articles: raw } = await apiPost({
       keyword,
-      ...(useTitle ? { keywordLoc: 'title' } : {}),
-      articlesCount: 30,
+      keywordLoc: 'title',
+      articlesCount: 35,
       articlesSortBy: 'sourceImportance',
       startSourceRankPercentile: 0,
-      endSourceRankPercentile: 40,
+      endSourceRankPercentile: 30,
       dateStart: dateStr(7),
     });
 
@@ -718,10 +717,9 @@ router.post('/feed', async (req, res) => {
 function to60Words(text) {
   if (!text) return '';
   const clean = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
-  const words = clean.split(' ');
+  const words = clean.split(/\s+/).filter(Boolean);
   if (words.length <= 60) return clean;
   const snippet = words.slice(0, 60).join(' ');
-  // Find the last sentence ending (.  !  ?) after at least 40% of the snippet
   const minPos = Math.floor(snippet.length * 0.4);
   let bestEnd = -1;
   for (let i = snippet.length - 1; i >= minPos; i--) {
@@ -732,6 +730,24 @@ function to60Words(text) {
   }
   if (bestEnd > 0) return snippet.slice(0, bestEnd + 1);
   return snippet + '…';
+}
+
+// ─── Build a rich bite from all available article text ────────────────────────
+function makeBite(a) {
+  const title = (a.title || '').trim();
+  const body  = (a.body  || '').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+  const desc  = (a.description || '').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // If body is substantial, use it directly
+  const bodyWords = body.split(/\s+/).filter(Boolean);
+  if (bodyWords.length >= 40) return to60Words(body);
+
+  // Otherwise combine title + best available extra text for a richer bite
+  const extra = body.length >= desc.length ? body : desc;
+  const titleSentence = title.endsWith('.') || title.endsWith('!') || title.endsWith('?')
+    ? title : title + '.';
+  const combined = `${titleSentence} ${extra}`.replace(/\s+/g, ' ').trim();
+  return to60Words(combined);
 }
 
 // ─── Helper: fetch + cache quickbites data ────────────────────────────────────
@@ -796,7 +812,7 @@ async function refreshQuickBites(cacheKey, interests, country) {
   const articles = raw
     .map((a, idx) => {
       const base = formatArticle(a, idx);
-      const bite = to60Words(a.body || '');
+      const bite = makeBite(a);
       const text = ((a.title || '') + ' ' + (a.body || '')).toLowerCase();
       const matchCount = [...interestWordSet].filter(kw => text.includes(kw)).length;
       const interestBoost = Math.min(matchCount * 8, 60);

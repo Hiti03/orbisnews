@@ -135,6 +135,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             await AsyncStorage.multiRemove([
               'onboarding_complete', 'user_country', 'user_interests', 'dark_mode',
+              'user_city', 'quickbites_cache',
             ]);
             router.replace('/onboarding/welcome');
           },

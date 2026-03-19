@@ -57,7 +57,6 @@ export default function FeedScreen() {
   const [country, setCountry] = useState('');
   const [sortBy, setSortBy] = useState('smart');
   const [city, setCity] = useState(null);
-  const countryVal = country;
 
   useFocusEffect(
     useCallback(() => { loadData(); }, [])

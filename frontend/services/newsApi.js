@@ -1,10 +1,21 @@
 const BASE_URL = 'https://backend-production-19dc.up.railway.app/api';
 
 async function apiFetch(url, options = {}) {
-  const res = await fetch(url, options);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
-  return data;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error(`Server error ${res.status}`); }
+    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+    return data;
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('Request timed out. Check your connection.');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function fetchTopNews(country, forceRefresh = false) {
