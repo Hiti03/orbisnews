@@ -662,25 +662,33 @@ router.post('/feed', async (req, res) => {
           }),
         ]
       : [
-          // Top articles from reputable sources (fresh & quality)
-          apiPost({
-            articlesCount: 20,
-            articlesSortBy: 'sourceImportance',
-            startSourceRankPercentile: 0,
-            endSourceRankPercentile: 30,
-            dateStart,
-          }),
-          // Interest-matched articles
+          // Top articles from country-based sources (replaces unfiltered global call)
+          countryUri
+            ? apiPost({
+                sourceLocationUri: countryUri,
+                articlesCount: 20,
+                articlesSortBy: 'sourceImportance',
+                dateStart,
+              })
+            : apiPost({
+                articlesCount: 20,
+                articlesSortBy: 'sourceImportance',
+                startSourceRankPercentile: 0,
+                endSourceRankPercentile: 20,
+                dateStart,
+              }),
+          // Interest-matched articles with country context
           apiPost({
             keyword: interestKeywords,
+            ...(countryUri ? { locationUri: countryUri } : {}),
             articlesCount: 25,
             articlesSortBy: 'date',
             dateStart,
           }),
-          // Country-specific articles
+          // Articles about/from the country (event location)
           countryUri
             ? apiPost({
-                sourceLocationUri: countryUri,
+                locationUri: countryUri,
                 articlesCount: 15,
                 articlesSortBy: 'date',
                 dateStart,
