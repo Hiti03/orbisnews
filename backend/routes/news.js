@@ -662,22 +662,17 @@ router.post('/feed', async (req, res) => {
           }),
         ]
       : [
-          // Top articles from country-based sources (replaces unfiltered global call)
-          countryUri
+          // 1. Interests + City (most specific — user's topics in their city)
+          city
             ? apiPost({
-                sourceLocationUri: countryUri,
-                articlesCount: 20,
-                articlesSortBy: 'sourceImportance',
+                keyword: `(${interestKeywords}) AND ${city}`,
+                keywordLoc: 'title,body',
+                articlesCount: 15,
+                articlesSortBy: 'date',
                 dateStart,
               })
-            : apiPost({
-                articlesCount: 20,
-                articlesSortBy: 'sourceImportance',
-                startSourceRankPercentile: 0,
-                endSourceRankPercentile: 20,
-                dateStart,
-              }),
-          // Interest-matched articles with country context
+            : Promise.resolve({ articles: [] }),
+          // 2. Interests + Country (user's topics about their country)
           apiPost({
             keyword: interestKeywords,
             ...(countryUri ? { locationUri: countryUri } : {}),
@@ -685,22 +680,29 @@ router.post('/feed', async (req, res) => {
             articlesSortBy: 'date',
             dateStart,
           }),
-          // Articles about/from the country (event location)
+          // 3. Top articles from country sources, filtered by interests
+          countryUri
+            ? apiPost({
+                keyword: interestKeywords,
+                sourceLocationUri: countryUri,
+                articlesCount: 20,
+                articlesSortBy: 'sourceImportance',
+                dateStart,
+              })
+            : apiPost({
+                keyword: interestKeywords,
+                articlesCount: 20,
+                articlesSortBy: 'sourceImportance',
+                startSourceRankPercentile: 0,
+                endSourceRankPercentile: 20,
+                dateStart,
+              }),
+          // 4. General country top news (fallback for variety)
           countryUri
             ? apiPost({
                 locationUri: countryUri,
-                articlesCount: 15,
-                articlesSortBy: 'date',
-                dateStart,
-              })
-            : Promise.resolve({ articles: [] }),
-          // City-specific articles (if location was shared)
-          city
-            ? apiPost({
-                keyword: city,
-                keywordLoc: 'title,body',
-                articlesCount: 15,
-                articlesSortBy: 'date',
+                articlesCount: 10,
+                articlesSortBy: 'sourceImportance',
                 dateStart,
               })
             : Promise.resolve({ articles: [] }),
