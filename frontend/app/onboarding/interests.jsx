@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const INTERESTS = [
   { id: 'geopolitics',   label: 'Geopolitics',        emoji: '🌐' },
@@ -59,7 +60,8 @@ export default function Interests() {
     router.replace('/(tabs)');
   }
 
-  const s = makeStyles(theme);
+  const insets = useSafeAreaInsets();
+  const s = makeStyles(theme, insets);
 
   return (
     <View style={s.container}>
@@ -110,9 +112,9 @@ export default function Interests() {
   );
 }
 
-function makeStyles(theme) {
+function makeStyles(theme, insets = { top: 0 }) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background, paddingHorizontal: 20, paddingTop: 56 },
+    container: { flex: 1, backgroundColor: theme.background, paddingHorizontal: 20, paddingTop: insets.top + 16 },
     header: { marginBottom: 20 },
     title: { fontSize: 26, fontWeight: 'bold', color: theme.text },
     subtitle: { fontSize: 14, color: theme.subtext, marginTop: 6 },

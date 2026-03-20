@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COUNTRIES = [
   'Argentina', 'Australia', 'Bangladesh', 'Brazil', 'Canada', 'China',
@@ -23,7 +24,8 @@ export default function Welcome() {
     router.push('/onboarding/interests');
   }
 
-  const s = makeStyles(theme);
+  const insets = useSafeAreaInsets();
+  const s = makeStyles(theme, insets);
 
   return (
     <View style={s.container}>
@@ -64,10 +66,10 @@ export default function Welcome() {
   );
 }
 
-function makeStyles(theme) {
+function makeStyles(theme, insets = { top: 0 }) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    scroll: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 40 },
+    scroll: { paddingHorizontal: 20, paddingTop: insets.top + 20, paddingBottom: 40 },
     header: { alignItems: 'center', marginBottom: 28 },
     logo: { fontSize: 32, fontWeight: 'bold', color: theme.text },
     tagline: { fontSize: 14, color: theme.subtext, marginTop: 4, textAlign: 'center', alignSelf: 'stretch' },

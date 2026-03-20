@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import NewsCard from '../../components/NewsCard';
 import SkeletonCard from '../../components/SkeletonCard';
 import { fetchTopNews } from '../../services/newsApi';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SORT_OPTIONS = [
   { key: 'smart',  label: '✨ Smart' },
@@ -77,7 +78,8 @@ export default function HomeScreen() {
     return [...articles].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
   }, [articles, sortBy]);
 
-  const s = makeStyles(theme);
+  const insets = useSafeAreaInsets();
+  const s = makeStyles(theme, insets);
 
   // Short display name for the country chip (max 12 chars)
   const shortCountry = country.length > 14 ? country.split(' ').slice(-1)[0] : country;
@@ -185,11 +187,11 @@ export default function HomeScreen() {
   );
 }
 
-function makeStyles(theme) {
+function makeStyles(theme, insets = { top: 0 }) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     header: {
-      paddingHorizontal: 20, paddingTop: 52, paddingBottom: 12,
+      paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 12,
       borderBottomWidth: 1, borderBottomColor: theme.border,
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
     },

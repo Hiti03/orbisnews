@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useTheme } from '../../context/ThemeContext';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COUNTRIES = [
   'Argentina', 'Australia', 'Bangladesh', 'Brazil', 'Canada', 'China',
@@ -144,7 +145,8 @@ export default function SettingsScreen() {
     );
   }
 
-  const s = makeStyles(theme);
+  const insets = useSafeAreaInsets();
+  const s = makeStyles(theme, insets);
 
   return (
     <View style={s.container}>
@@ -288,10 +290,10 @@ export default function SettingsScreen() {
   );
 }
 
-function makeStyles(theme) {
+function makeStyles(theme, insets = { top: 0 }) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    scroll: { paddingHorizontal: 20, paddingTop: 56, paddingBottom: 60 },
+    scroll: { paddingHorizontal: 20, paddingTop: insets.top + 16, paddingBottom: 60 },
     pageTitle: { fontSize: 24, fontWeight: 'bold', color: theme.text, marginBottom: 24 },
     section: {
       fontSize: 11, fontWeight: '700', color: theme.subtext,

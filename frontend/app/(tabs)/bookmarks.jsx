@@ -6,6 +6,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { getBookmarks, toggleBookmark } from '../../services/bookmarks';
 import NewsCard from '../../components/NewsCard';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BookmarksScreen() {
   const { theme } = useTheme();
@@ -23,7 +24,8 @@ export default function BookmarksScreen() {
     setBookmarks(prev => prev.filter(a => a.id !== article.id));
   }
 
-  const s = makeStyles(theme);
+  const insets = useSafeAreaInsets();
+  const s = makeStyles(theme, insets);
 
   return (
     <View style={s.container}>
@@ -60,11 +62,11 @@ export default function BookmarksScreen() {
   );
 }
 
-function makeStyles(theme) {
+function makeStyles(theme, insets = { top: 0 }) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     header: {
-      paddingHorizontal: 20, paddingTop: 52, paddingBottom: 14,
+      paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 14,
       borderBottomWidth: 1, borderBottomColor: theme.border,
     },
     title: { fontSize: 22, fontWeight: 'bold', color: theme.text },

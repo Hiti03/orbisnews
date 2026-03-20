@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
 import NewsCard from '../../components/NewsCard';
 import { searchNews, fetchTrending, fetchHeadlines, fetchXTrending } from '../../services/newsApi';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CATEGORIES = [
   { id: 'breaking',      label: '🔴 Breaking',     type: 'trending' },
@@ -254,7 +255,8 @@ export default function SearchScreen() {
     if (!loadingMore && hasMore && searchTerm) doSearch(searchTerm, page + 1);
   }
 
-  const s = makeStyles(theme);
+  const insets = useSafeAreaInsets();
+  const s = makeStyles(theme, insets);
 
   const listHeader = mode === 'results' ? (
     <View>
@@ -491,11 +493,11 @@ export default function SearchScreen() {
   );
 }
 
-function makeStyles(theme) {
+function makeStyles(theme, insets = { top: 0 }) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     header: {
-      paddingTop: 52, paddingHorizontal: 16, paddingBottom: 8,
+      paddingTop: insets.top + 12, paddingHorizontal: 16, paddingBottom: 8,
       borderBottomWidth: 1, borderBottomColor: theme.border,
       backgroundColor: theme.background,
     },

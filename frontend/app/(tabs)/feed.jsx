@@ -9,6 +9,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import NewsCard from '../../components/NewsCard';
 import SkeletonCard from '../../components/SkeletonCard';
 import { fetchPersonalizedFeed } from '../../services/newsApi';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const INTEREST_META = {
   geopolitics:    { label: 'Geopolitics',        emoji: '🌐' },
@@ -102,7 +103,8 @@ export default function FeedScreen() {
     return [...base].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
   }, [articles, sortBy]);
 
-  const s = makeStyles(theme);
+  const insets = useSafeAreaInsets();
+  const s = makeStyles(theme, insets);
 
   if (loading) {
     return (
@@ -226,11 +228,11 @@ export default function FeedScreen() {
   );
 }
 
-function makeStyles(theme) {
+function makeStyles(theme, insets = { top: 0 }) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     header: {
-      paddingHorizontal: 20, paddingTop: 52, paddingBottom: 14,
+      paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 14,
       borderBottomWidth: 1, borderBottomColor: theme.border,
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
     },
